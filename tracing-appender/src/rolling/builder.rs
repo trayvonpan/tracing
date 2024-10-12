@@ -236,6 +236,27 @@ impl Builder {
         }
     }
 
+    /// The offset is used to determine the current date and time when rotating
+    /// log files. If the offset is not set, the current date and time will be
+    /// determined using the system's local time.
+    /// # Examples
+    /// ```
+    /// use tracing_appender::rolling::{RollingFileAppender, Rotation};
+    /// use time::UtcOffset;
+    /// # fn docs() {
+    /// let appender = RollingFileAppender::builder()
+    ///     .rotation(Rotation::HOURLY) // rotate log files once every hour
+    ///     .offset(UtcOffset::from_hms(-5, 0, 0).unwrap()) // use UTC-5 as the offset
+    ///     .build("/var/log")
+    ///     .expect("failed to initialize rolling file appender");
+    /// # drop(appender)
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn offset(self, offset: UtcOffset) -> Self {
+        Self { offset, ..self }
+    }
+
     /// Builds a new [`RollingFileAppender`] with the configured parameters,
     /// emitting log files to the provided directory.
     ///
