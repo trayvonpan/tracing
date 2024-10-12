@@ -1,6 +1,7 @@
 use super::{RollingFileAppender, Rotation};
 use std::{io, path::Path};
 use thiserror::Error;
+use time::UtcOffset;
 
 /// A [builder] for configuring [`RollingFileAppender`]s.
 ///
@@ -11,6 +12,7 @@ pub struct Builder {
     pub(super) prefix: Option<String>,
     pub(super) suffix: Option<String>,
     pub(super) max_files: Option<usize>,
+    pub(super) offset: UtcOffset,
 }
 
 /// Errors returned by [`Builder::build`].
@@ -54,6 +56,7 @@ impl Builder {
             prefix: None,
             suffix: None,
             max_files: None,
+            offset: UtcOffset::UTC,
         }
     }
 

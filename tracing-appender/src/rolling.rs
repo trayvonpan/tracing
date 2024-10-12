@@ -34,7 +34,7 @@ use std::{
     path::{Path, PathBuf},
     sync::atomic::{AtomicUsize, Ordering},
 };
-use time::{format_description, Date, Duration, OffsetDateTime, Time};
+use time::{format_description, Date, Duration, OffsetDateTime, Time, UtcOffset};
 
 mod builder;
 pub use builder::{Builder, InitError};
@@ -86,6 +86,7 @@ pub use builder::{Builder, InitError};
 pub struct RollingFileAppender {
     state: Inner,
     writer: RwLock<File>,
+    offset: UtcOffset,
     #[cfg(test)]
     now: Box<dyn Fn() -> OffsetDateTime + Send + Sync>,
 }
@@ -190,6 +191,7 @@ impl RollingFileAppender {
             ref prefix,
             ref suffix,
             ref max_files,
+            ref offset,
         } = builder;
         let directory = directory.as_ref().to_path_buf();
         let now = OffsetDateTime::now_utc();
@@ -204,6 +206,7 @@ impl RollingFileAppender {
         Ok(Self {
             state,
             writer,
+            offset: *offset,
             #[cfg(test)]
             now: Box::new(OffsetDateTime::now_utc),
         })
@@ -212,10 +215,10 @@ impl RollingFileAppender {
     #[inline]
     fn now(&self) -> OffsetDateTime {
         #[cfg(test)]
-        return (self.now)();
+        return (self.now)().to_offset(self.offset);
 
         #[cfg(not(test))]
-        OffsetDateTime::now_utc()
+        OffsetDateTime::now_utc().to_offset(self.offset)
     }
 }
 
@@ -949,7 +952,12 @@ mod test {
             let clock = clock.clone();
             Box::new(move || *clock.lock().unwrap())
         };
-        let appender = RollingFileAppender { state, writer, now };
+        let appender = RollingFileAppender {
+            state,
+            writer,
+            now,
+            offset: UtcOffset::UTC,
+        };
         let default = tracing_subscriber::fmt()
             .without_time()
             .with_level(false)
@@ -1031,7 +1039,12 @@ mod test {
             let clock = clock.clone();
             Box::new(move || *clock.lock().unwrap())
         };
-        let appender = RollingFileAppender { state, writer, now };
+        let appender = RollingFileAppender {
+            state,
+            writer,
+            now,
+            offset: UtcOffset::UTC,
+        };
         let default = tracing_subscriber::fmt()
             .without_time()
             .with_level(false)
